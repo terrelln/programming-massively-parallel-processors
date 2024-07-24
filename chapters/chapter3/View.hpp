@@ -27,9 +27,9 @@ struct Dimension {
 };
 
 namespace detail {
-template <char kName, std::size_t kExtent> class Extent {
+template <std::size_t kExtent> class ExtentHolder {
 public:
-  explicit Extent(std::size_t extent) {
+  explicit ExtentHolder(std::size_t extent) {
     static_assert(kExtent != kDynamicExtent);
     if (extent != kExtent) {
       throw std::runtime_error("Extent mismatch");
@@ -38,9 +38,9 @@ public:
   std::size_t get() const { return kExtent; }
 };
 
-template <char kName> class Extent<kName, kDynamicExtent> {
+template <> class ExtentHolder<kDynamicExtent> {
 public:
-  explicit Extent(std::size_t extent) : extent_(extent) {
+  explicit ExtentHolder(std::size_t extent) : extent_(extent) {
     assert(extent != kDynamicExtent);
   }
   std::size_t get() const { return extent_; }
@@ -49,23 +49,14 @@ private:
   std::size_t extent_;
 };
 
-constexpr std::size_t rowMajorStrideZ(std::size_t shapeX, std::size_t shapeY) {
-  if (shapeX == kDynamicExtent || shapeY == kDynamicExtent) {
-    return kDynamicExtent;
-  }
-  return shapeX * shapeY;
-}
-
-constexpr std::size_t colMajorStrideX(std::size_t shapeY, std::size_t shapeZ) {
-  if (shapeY == kDynamicExtent || shapeZ == kDynamicExtent) {
-    return kDynamicExtent;
-  }
-  return shapeY * shapeZ;
-}
-
 template <Dimension kDim>
-class DimensionHolder : Extent<'s', kDim.shape>, Extent<'S', kDim.stride> {
+class DimensionHolder
+    : std::tuple<ExtentHolder<kDim.shape>, ExtentHolder<kDim.stride>> {
 private:
+  using Base = std::tuple<ExtentHolder<kDim.shape>, ExtentHolder<kDim.stride>>;
+
+  Base const &base() const { return static_cast<Base const &>(*this); }
+
   static constexpr bool isConvertible(Dimension from, Dimension to) {
     auto isConvertible = [](std::size_t from, std::size_t to) {
       return from == kDynamicExtent || to == kDynamicExtent || from == to;
@@ -84,8 +75,7 @@ private:
 
 public:
   constexpr DimensionHolder(Dimension const &dim)
-      : Extent<'s', kDim.shape>(dim.shape),
-        Extent<'S', kDim.stride>(dim.stride) {
+      : Base(dim.shape, dim.stride) {
     // Already validated by Extent constructor
     assert(kDim.shape == kDynamicExtent || kDim.shape == dim.shape);
     assert(kDim.stride == kDynamicExtent || kDim.stride == dim.stride);
@@ -97,8 +87,8 @@ public:
       DimensionHolder(DimensionHolder<kOtherDim> const &other)
       : DimensionHolder(other.dimension()) {}
 
-  constexpr size_t shape() const { return Extent<'s', kDim.shape>::get(); }
-  constexpr size_t stride() const { return Extent<'S', kDim.stride>::get(); }
+  constexpr size_t shape() const { return std::get<0>(base()).get(); }
+  constexpr size_t stride() const { return std::get<1>(base()).get(); }
   constexpr Dimension dimension() const { return {shape(), stride()}; }
 };
 } // namespace detail
@@ -316,7 +306,7 @@ public:
   constexpr Dimension operator()(std::size_t index) const {
     std::size_t shape = shapes_[index];
     std::size_t stride = 1;
-    for (std::size_t i = index; i-- > 0; ) {
+    for (std::size_t i = index; i-- > 0;) {
       if constexpr (kHandleDynamic) {
         if (shapes_[i] == kDynamicExtent) {
           stride = kDynamicExtent;
