@@ -61,6 +61,7 @@ void matrixMultiplyByRow(float *P_h, float const *M_h, float const *N_h,
     auto const blocks = (cols + kThreadsPerBlock - 1) / kThreadsPerBlock;
     matrixMultiplyByRowKernel<<<blocks, kThreadsPerBlock>>>(P_d, M_d, N_d, rows,
                                                             cols, inner);
+    checkCuda(cudaPeekAtLastError());
   }
 
   checkCuda(cudaMemcpy(P_h, P_d, P_bytes, cudaMemcpyDeviceToHost));
@@ -119,6 +120,7 @@ void matrixMultiplyByCol(float *P_h, float const *M_h, float const *N_h,
     auto const blocks = (rows + kThreadsPerBlock - 1) / kThreadsPerBlock;
     matrixMultiplyByColKernel<<<blocks, kThreadsPerBlock>>>(P_d, M_d, N_d, rows,
                                                             cols, inner);
+    checkCuda(cudaPeekAtLastError());
   }
 
   checkCuda(cudaMemcpy(P_h, P_d, P_bytes, cudaMemcpyDeviceToHost));
