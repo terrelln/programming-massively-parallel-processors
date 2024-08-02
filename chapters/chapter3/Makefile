@@ -4,7 +4,7 @@ LDFLAGS ?= -L/opt/cuda/lib
 CXX = clang++
 
 NVCC = /opt/cuda/bin/nvcc
-CUFLAGS ?= -ccbin=$(CXX)
+CUFLAGS ?= 
 
 # --cuda-path=/opt/cuda/ --cuda-gpu-arch=sm_80
 

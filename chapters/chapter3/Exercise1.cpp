@@ -68,10 +68,10 @@ void validate(View2D<float const> P0, View2D<float const> P1) {
 }
 
 void benchmark() {
-  size_t constexpr M_rows = 1024;
-  size_t constexpr M_cols = 1024;
+  size_t constexpr M_rows = 500;
+  size_t constexpr M_cols = 1000;
   size_t constexpr N_rows = M_cols;
-  size_t constexpr N_cols = 1024;
+  size_t constexpr N_cols = 750;
   size_t constexpr P_rows = M_rows;
   size_t constexpr P_cols = N_cols;
 
